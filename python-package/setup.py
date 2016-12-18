@@ -12,12 +12,10 @@ CURRENT_DIR = os.path.dirname(__file__)
 # We can not import `xgboost.libpath` in setup.py directly since xgboost/__init__.py
 # import `xgboost.core` and finally will import `numpy` and `scipy` which are setup
 # `install_requires`. That's why we're using `exec` here.
-libpath_py = os.path.join(CURRENT_DIR, 'xgboost/libpath.py')
-libpath = {'__file__': libpath_py}
-exec(compile(open(libpath_py, "rb").read(), libpath_py, 'exec'), libpath, libpath)
+#libpath_py = os.path.join(CURRENT_DIR, 'xgboost/libpath.py')
+#libpath = {'__file__': libpath_py}
+#exec(compile(open(libpath_py, "rb").read(), libpath_py, 'exec'), libpath, libpath)
 
-LIB_PATH = libpath['find_lib_path']()
-print("Install libxgboost from: %s" % LIB_PATH)
 # Please use setup_pip.py for generating and deploying pip installation
 # detailed instruction in setup_pip.py
 setup(name='xgboost',
@@ -36,7 +34,6 @@ setup(name='xgboost',
       # this will use MANIFEST.in during install where we specify additional files,
       # this is the golden line
       include_package_data=True,
-      data_files=[('xgboost', LIB_PATH)],
       license='Apache-2.0',
       classifiers=['License :: OSI Approved :: Apache Software License'],
       url='https://github.com/dmlc/xgboost')
