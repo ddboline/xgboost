@@ -25,6 +25,7 @@ import scala.collection.JavaConverters._
   * XGBoost Scala Training function.
   */
 object XGBoost {
+
   /**
     * Train a booster given parameters.
     *
@@ -33,6 +34,11 @@ object XGBoost {
     * @param round   Number of boosting iterations.
     * @param watches a group of items to be evaluated during training, this allows user to watch
     *                performance on the validation set.
+    * @param metrics array containing the evaluation metrics for each matrix in watches for each
+    *                iteration
+    * @param earlyStoppingRound if non-zero, training would be stopped
+    *                           after a specified number of consecutive
+    *                           increases in any evaluation metric.
     * @param obj     customized objective
     * @param eval    customized evaluation
     * @return The trained booster.
@@ -42,18 +48,17 @@ object XGBoost {
       dtrain: DMatrix,
       params: Map[String, Any],
       round: Int,
-      watches: Map[String, DMatrix] = Map[String, DMatrix](),
+      watches: Map[String, DMatrix] = Map(),
+      metrics: Array[Array[Float]] = null,
       obj: ObjectiveTrait = null,
-      eval: EvalTrait = null): Booster = {
-    val jWatches = watches.map{case (name, matrix) => (name, matrix.jDMatrix)}
+      eval: EvalTrait = null,
+      earlyStoppingRound: Int = 0): Booster = {
+    val jWatches = watches.mapValues(_.jDMatrix).asJava
     val xgboostInJava = JXGBoost.train(
       dtrain.jDMatrix,
       // we have to filter null value for customized obj and eval
-      params.filter(_._2 != null).map{
-        case (key: String, value) => (key, value.toString)
-      }.toMap[String, AnyRef].asJava,
-      round, jWatches.asJava,
-      obj, eval)
+      params.filter(_._2 != null).mapValues(_.toString.asInstanceOf[AnyRef]).asJava,
+      round, jWatches, metrics, obj, eval, earlyStoppingRound)
     new Booster(xgboostInJava)
   }
 

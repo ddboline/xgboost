@@ -77,7 +77,7 @@ class GradientBooster {
    * \param ntree_limit limit the number of trees used in prediction, when it equals 0, this means
    *    we do not limit number of trees, this parameter is only valid for gbtree, but not for gblinear
    */
-  virtual void Predict(DMatrix* dmat,
+  virtual void PredictBatch(DMatrix* dmat,
                        std::vector<bst_float>* out_preds,
                        unsigned ntree_limit = 0) = 0;
   /*!
@@ -92,7 +92,7 @@ class GradientBooster {
    * \param root_index the root index
    * \sa Predict
    */
-  virtual void Predict(const SparseBatch::Inst& inst,
+  virtual void PredictInstance(const SparseBatch::Inst& inst,
                        std::vector<bst_float>* out_preds,
                        unsigned ntree_limit = 0,
                        unsigned root_index = 0) = 0;
@@ -107,6 +107,20 @@ class GradientBooster {
   virtual void PredictLeaf(DMatrix* dmat,
                            std::vector<bst_float>* out_preds,
                            unsigned ntree_limit = 0) = 0;
+
+  /*!
+   * \brief feature contributions to individual predictions; the output will be a vector
+   *         of length (nfeats + 1) * num_output_group * nsample, arranged in that order
+   * \param dmat feature matrix
+   * \param out_contribs output vector to hold the contributions
+   * \param ntree_limit limit the number of trees used in prediction, when it equals 0, this means
+   *    we do not limit number of trees
+   * \param approximate use a faster (inconsistent) approximation of SHAP values
+   */
+  virtual void PredictContribution(DMatrix* dmat,
+                           std::vector<bst_float>* out_contribs,
+                           unsigned ntree_limit = 0, bool approximate = false) = 0;
+
   /*!
    * \brief dump the model in the requested format
    * \param fmap feature map that may help give interpretations of feature

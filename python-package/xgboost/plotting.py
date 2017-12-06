@@ -14,8 +14,8 @@ from .sklearn import XGBModel
 def plot_importance(booster, ax=None, height=0.2,
                     xlim=None, ylim=None, title='Feature importance',
                     xlabel='F score', ylabel='Features',
-                    importance_type='weight',
-                    grid=True, **kwargs):
+                    importance_type='weight', max_num_features=None,
+                    grid=True, show_values=True, **kwargs):
 
     """Plot importance based on fitted trees.
 
@@ -25,12 +25,15 @@ def plot_importance(booster, ax=None, height=0.2,
         Booster or XGBModel instance, or dict taken by Booster.get_fscore()
     ax : matplotlib Axes, default None
         Target axes instance. If None, new figure and axes will be created.
+    grid : bool, Turn the axes grids on or off.  Default is True (On).
     importance_type : str, default "weight"
         How the importance is calculated: either "weight", "gain", or "cover"
         "weight" is the number of times a feature appears in a tree
         "gain" is the average gain of splits which use the feature
         "cover" is the average coverage of splits which use the feature
             where coverage is defined as the number of samples affected by the split
+    max_num_features : int, default None
+        Maximum number of top features displayed on plot. If None, all features will be displayed.
     height : float, default 0.2
         Bar height, passed to ax.barh()
     xlim : tuple, default None
@@ -43,6 +46,8 @@ def plot_importance(booster, ax=None, height=0.2,
         X axis title label. To disable, pass None.
     ylabel : str, default "Features"
         Y axis title label. To disable, pass None.
+    show_values : bool, default True
+        Show values on plot. To disable, pass False.
     kwargs :
         Other keywords passed to ax.barh()
 
@@ -57,7 +62,7 @@ def plot_importance(booster, ax=None, height=0.2,
         raise ImportError('You must install matplotlib to plot importance')
 
     if isinstance(booster, XGBModel):
-        importance = booster.booster().get_score(importance_type=importance_type)
+        importance = booster.get_booster().get_score(importance_type=importance_type)
     elif isinstance(booster, Booster):
         importance = booster.get_score(importance_type=importance_type)
     elif isinstance(booster, dict):
@@ -69,7 +74,10 @@ def plot_importance(booster, ax=None, height=0.2,
         raise ValueError('Booster.get_score() results in empty')
 
     tuples = [(k, importance[k]) for k in importance]
-    tuples = sorted(tuples, key=lambda x: x[1])
+    if max_num_features is not None:
+        tuples = sorted(tuples, key=lambda x: x[1])[-max_num_features:]
+    else:
+        tuples = sorted(tuples, key=lambda x: x[1])
     labels, values = zip(*tuples)
 
     if ax is None:
@@ -78,8 +86,9 @@ def plot_importance(booster, ax=None, height=0.2,
     ylocs = np.arange(len(values))
     ax.barh(ylocs, values, align='center', height=height, **kwargs)
 
-    for x, y in zip(values, ylocs):
-        ax.text(x + 1, y, x, va='center')
+    if show_values is True:
+        for x, y in zip(values, ylocs):
+            ax.text(x + 1, y, x, va='center')
 
     ax.set_yticks(ylocs)
     ax.set_yticklabels(labels)
@@ -95,7 +104,7 @@ def plot_importance(booster, ax=None, height=0.2,
         if not isinstance(ylim, tuple) or len(ylim) != 2:
             raise ValueError('ylim must be a tuple of 2 elements')
     else:
-        ylim = (-1, len(importance))
+        ylim = (-1, len(values))
     ax.set_ylim(ylim)
 
     if title is not None:
@@ -191,7 +200,7 @@ def to_graphviz(booster, fmap='', num_trees=0, rankdir='UT',
         raise ValueError('booster must be Booster or XGBModel instance')
 
     if isinstance(booster, XGBModel):
-        booster = booster.booster()
+        booster = booster.get_booster()
 
     tree = booster.get_dump(fmap=fmap)[num_trees]
     tree = tree.split()
